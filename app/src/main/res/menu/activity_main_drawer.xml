@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group
+
+        android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/nav_book"
+            android:icon="@drawable/ic_menu_book_a_spot"
+            android:title="@string/navigation_book_a_spot" />
+
+        <item
+            android:id="@+id/nav_list_a_spot"
+            android:icon="@drawable/ic_menu_list_a_spot"
+            android:title="@string/navigation_list_a_spot" />
+
+        <item
+            android:id="@+id/nav_past_bookings"
+            android:icon="@drawable/ic_menu_past_bookings"
+            android:title="@string/navigation_past_bookings" />
+
+    </group>
+
+    <group
+        android:id="@+id/nav_finance"
+        android:checkableBehavior="none">
+
+        <item
+            android:id="@+id/nav_payments"
+            android:icon="@drawable/ic_menu_payments"
+            android:title="@string/navigation_payments"/>
+
+        <item
+            android:id="@+id/nav_promos"
+            android:icon="@drawable/ic_menu_promos"
+            android:title="@string/navigation_payments" />
+
+        <item
+            android:id="@+id/nav_wallet"
+            android:icon="@drawable/ic_menu_wallet"
+            android:title="@string/navigation_wallet" />
+
+        <item
+            android:id="@+id/nav_my_profile"
+            android:icon="@drawable/ic_menu_profile"
+            android:title="@string/navigation_profile" />
+
+        <item
+            android:id="@+id/nav_ratings"
+            android:icon="@drawable/ic_menu_rating"
+            android:title="@string/navigation_ratings" />
+
+    </group>
+
+    <group
+        android:id="@+id/nav_system"
+        android:checkableBehavior="none">
+
+        <item
+            android:id="@+id/nav_help"
+            android:icon="@drawable/ic_menu_help"
+            android:title="@string/navigation_help" />
+
+        <item
+            android:id="@+id/nav_legal"
+            android:icon="@drawable/ic_menu_legal"
+            android:title="@string/navigation_legal" />
+
+        <item
+            android:id="@+id/nav_logout"
+            android:icon="@drawable/ic_menu_logout"
+            android:title="@string/navigation_logout" />
+
+    </group>
+
+</menu>
