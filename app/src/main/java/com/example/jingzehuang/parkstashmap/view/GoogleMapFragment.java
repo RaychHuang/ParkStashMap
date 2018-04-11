@@ -15,12 +15,17 @@ import android.view.ViewGroup;
 
 import com.example.jingzehuang.parkstashmap.R;
 
+import com.example.jingzehuang.parkstashmap.model.MyLocation;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+
+import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -29,18 +34,25 @@ import butterknife.ButterKnife;
  * Created by Jingze HUANG on Apr.10, 2018.
  */
 
-public class GoogleMapFragment extends Fragment implements OnMapReadyCallback{
+public class GoogleMapFragment extends Fragment
+        implements OnMapReadyCallback, GoogleMap.OnMapClickListener, GoogleMap.OnMapLongClickListener, GoogleMap.OnCameraIdleListener{
     @BindView(R.id.googleMapView) MapView googleMapView;
+
+    public static final String BUNDLE_KEY_LIST = "locationLists";
+    private static final float CAMERA_ZOOM_SMALL = 15.5f;
+    private static final float CAMERA_ZOOM_LARGE = 12f;
     private Context mContext;
     private View view;
     private GoogleMap mGoogleMap;
+    private ArrayList<MyLocation> locationList;
 
-
-    public static GoogleMapFragment getInstance() {
+    public static GoogleMapFragment getInstance(ArrayList<MyLocation> locationList) {
+        Bundle argument = new Bundle();
+        argument.putParcelableArrayList(BUNDLE_KEY_LIST, locationList);
         GoogleMapFragment fragment = new GoogleMapFragment();
+        fragment.setArguments(argument);
         return fragment;
     }
-
 
     @Nullable
     @Override
@@ -55,6 +67,8 @@ public class GoogleMapFragment extends Fragment implements OnMapReadyCallback{
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         Log.d("Raych", this + " Fragment: onViewCreated() is called.");
+        locationList = getArguments().getParcelableArrayList(BUNDLE_KEY_LIST);
+
         googleMapView.onCreate(null);
         googleMapView.onResume();
         googleMapView.getMapAsync(this);
@@ -64,14 +78,54 @@ public class GoogleMapFragment extends Fragment implements OnMapReadyCallback{
     public void onMapReady(GoogleMap googleMap) {
         mGoogleMap = googleMap;
 
-        LatLng SANJOSE = new LatLng(37.33, -121.89);
         if (ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
+        MyLocation startupLocation = locationList.get(0);
+        LatLng startupLatLng = startupLocation.getLatLng();
         googleMap.setMyLocationEnabled(true);
+//        mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(startupLatLng));
+        animateTo(startupLatLng);
+        mGoogleMap.addMarker(new MarkerOptions().position(startupLatLng).title(startupLocation.getTitle()));
 
-        mGoogleMap.addMarker(new MarkerOptions().position(SANJOSE).title("Marker in San Jose"));
-        mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(SANJOSE));
         Log.d("Raych", this + " Fragment: onMapReady() is called.");
+    }
+
+    @Override
+    public void onCameraIdle() {
+
+    }
+
+    @Override
+    public void onMapClick(LatLng latLng) {
+
+    }
+
+    @Override
+    public void onMapLongClick(LatLng latLng) {
+
+    }
+
+    private boolean isReady() {
+        return mGoogleMap != null;
+    }
+
+    public void animateTo(LatLng latLng) {
+        animateTo(latLng, CAMERA_ZOOM_SMALL);
+    }
+
+
+    public void animateTo(LatLng latLng, float zoom) {
+        if (!isReady()) {
+            return;
+        }
+        CameraPosition cameraPosition = new CameraPosition.Builder()
+                .target(latLng)
+                .zoom(CAMERA_ZOOM_SMALL)
+                .bearing(0f)
+                .build();
+        CameraUpdate cameraUpdate = CameraUpdateFactory.newCameraPosition(cameraPosition);
+
+        mGoogleMap.animateCamera(cameraUpdate);
     }
 }

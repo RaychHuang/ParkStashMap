@@ -1,12 +1,14 @@
 package com.example.jingzehuang.parkstashmap.view;
 
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -19,6 +21,17 @@ import android.view.MenuItem;
 import android.widget.FrameLayout;
 
 import com.example.jingzehuang.parkstashmap.R;
+import com.example.jingzehuang.parkstashmap.model.MyLocation;
+import com.example.jingzehuang.parkstashmap.utils.ModelUtils;
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlaceAutocomplete;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.reflect.TypeToken;
+
+import java.util.ArrayList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -33,50 +46,61 @@ public class MainActivity extends AppCompatActivity
     @BindView(R.id.toolbar) Toolbar toolbar;
     @BindView(R.id.fab) FloatingActionButton fab;
 
+    private static final String TAG = "Raych";
+
+    private static final String SP_LOCATIONS_KEY = "places";
+
+    private static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 100;
+
+    private final int LOCATION_LIST_CAPACITY = 10;
+
+    private GoogleMapFragment mapFragment;
+    private ArrayList<MyLocation> locationList;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        locationList = loadData();
         setupUI();
     }
 
-    private void setupUI() {
-        setupActionBar();
-        addFragment();
-        setupFab();
+    @Override
+    protected void onPause() {
+        super.onPause();
+        ModelUtils.save(getApplicationContext(),
+                SP_LOCATIONS_KEY, locationList);
+        Log.i(TAG, this + " MainActivity.onPause(): Location list has been saved. Data size: "
+                + locationList.size());
     }
 
-    private void setupActionBar() {
-        setSupportActionBar(toolbar);
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                Place place = PlaceAutocomplete.getPlace(this, data);
+                Log.i(TAG, "Place: " + place.getName() + place.getLatLng());
 
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
+                MyLocation targetLocation = new MyLocation.Builder()
+                        .setTitle(place.getName().toString())
+                        .setLatLng(place.getLatLng())
+                        .build();
+                while (locationList.size() >= LOCATION_LIST_CAPACITY) {
+                    locationList.remove(locationList.size() - 1);
+                }
+                locationList.add(0, targetLocation);
+                mapFragment.animateTo(targetLocation.getLatLng());
+            } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
+                Status status = PlaceAutocomplete.getStatus(this, data);
+                // TODO: Handle the error.
+                Log.i(TAG, status.getStatusMessage());
 
-        navigationView.setNavigationItemSelectedListener(this);
-    }
-
-    private void addFragment() {
-        FragmentManager manager = getSupportFragmentManager();
-        FragmentTransaction transaction = manager.beginTransaction();
-        Fragment fragment = GoogleMapFragment.getInstance();
-        transaction.add(mainFrameLayout.getId(), fragment);
-        transaction.commit();
-    }
-
-    private void setupFab() {
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                appBarLayout.setExpanded(true);
-
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
+            } else if (resultCode == RESULT_CANCELED) {
+                // The user canceled the operation.
             }
-        });
+        }
     }
 
     @Override
@@ -134,5 +158,78 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+
+    private void setupUI() {
+        setupActionBar();
+        addFragment();
+        setupFab();
+    }
+
+    private void setupActionBar() {
+        setSupportActionBar(toolbar);
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.addDrawerListener(toggle);
+        toggle.syncState();
+
+        navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    private void addFragment() {
+        FragmentManager manager = getSupportFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction();
+        mapFragment = GoogleMapFragment.getInstance(locationList);
+        transaction.add(mainFrameLayout.getId(), mapFragment);
+        transaction.commit();
+    }
+
+    private void setupFab() {
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+//                appBarLayout.setExpanded(true);
+                startSearchActivity();
+
+//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
+            }
+        });
+    }
+
+    private void startSearchActivity() {
+        try {
+
+            Intent intent = new PlaceAutocomplete
+                    .IntentBuilder(PlaceAutocomplete.MODE_OVERLAY)
+                    .build(this);
+
+            startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE);
+
+        } catch (GooglePlayServicesRepairableException e) {
+            // TODO: Handle the error.
+        } catch (GooglePlayServicesNotAvailableException e) {
+            // TODO: Handle the error.
+        }
+
+    }
+
+    private ArrayList<MyLocation> loadData() {
+        ArrayList<MyLocation> data = ModelUtils.read(getApplicationContext(), SP_LOCATIONS_KEY, new TypeToken<ArrayList<MyLocation>>(){});
+        if (data == null) {
+            data = new ArrayList<>(LOCATION_LIST_CAPACITY + 3);
+            MyLocation sanjose = new MyLocation.Builder()
+                    .setTitle("San Jose")
+                    .setLatLng(new LatLng(37.3382, -121.8863))
+                    .build();
+            data.add(sanjose);
+        }
+        return data;
+    }
+
+    private void setCameraFocus() {
+
     }
 }

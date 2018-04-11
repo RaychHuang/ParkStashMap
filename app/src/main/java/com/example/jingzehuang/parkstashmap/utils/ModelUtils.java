@@ -38,8 +38,4 @@ public class ModelUtils {
         return gson.toJson(object, typeToken.getType());
     }
 
-    public static <T> String toStringSpecified(Gson specifiedGson, T object, TypeToken<T> typeToken) {
-        return specifiedGson.toJson(object, typeToken.getType());
-    }
-
 }
