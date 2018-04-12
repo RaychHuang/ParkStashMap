@@ -21,6 +21,7 @@ import android.view.MenuItem;
 import android.widget.FrameLayout;
 
 import com.example.jingzehuang.parkstashmap.R;
+import com.example.jingzehuang.parkstashmap.model.LocationList;
 import com.example.jingzehuang.parkstashmap.model.MyLocation;
 import com.example.jingzehuang.parkstashmap.utils.ModelUtils;
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
@@ -32,6 +33,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -55,7 +57,8 @@ public class MainActivity extends AppCompatActivity
     private final int LOCATION_LIST_CAPACITY = 10;
 
     private GoogleMapFragment mapFragment;
-    private ArrayList<MyLocation> locationList;
+//    private ArrayList<MyLocation> locationList;
+    private LocationList mdLocationList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,17 +66,21 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
-        locationList = loadData();
+//        locationList = loadData();
+        mdLocationList = loadData();
         setupUI();
+        Log.e(TAG, "Size(): " + mdLocationList.size());
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+//        ModelUtils.save(getApplicationContext(),
+//                SP_LOCATIONS_KEY, locationList);
         ModelUtils.save(getApplicationContext(),
-                SP_LOCATIONS_KEY, locationList);
+                SP_LOCATIONS_KEY, mdLocationList.getLinkedList());
         Log.i(TAG, this + " MainActivity.onPause(): Location list has been saved. Data size: "
-                + locationList.size());
+                + mdLocationList.size());
     }
 
     @Override
@@ -81,17 +88,20 @@ public class MainActivity extends AppCompatActivity
         if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
                 Place place = PlaceAutocomplete.getPlace(this, data);
-                Log.i(TAG, "Place: " + place.getName() + place.getLatLng());
+                String resultTitle = place.getName().toString();
+                LatLng resultLatLng = place.getLatLng();
+                Log.i(TAG, "Place: " + resultTitle + " " + resultLatLng);
 
                 MyLocation targetLocation = new MyLocation.Builder()
-                        .setTitle(place.getName().toString())
-                        .setLatLng(place.getLatLng())
+                        .setTitle(resultTitle)
+                        .setLatLng(resultLatLng)
                         .build();
-                while (locationList.size() >= LOCATION_LIST_CAPACITY) {
-                    locationList.remove(locationList.size() - 1);
+
+                if (mdLocationList.add(targetLocation)) {
+                    mapFragment.addMarker(resultLatLng, resultTitle, 0, 400);
                 }
-                locationList.add(0, targetLocation);
                 mapFragment.animateTo(targetLocation.getLatLng());
+
             } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
                 Status status = PlaceAutocomplete.getStatus(this, data);
                 // TODO: Handle the error.
@@ -160,7 +170,6 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
-
     private void setupUI() {
         setupActionBar();
         addFragment();
@@ -181,7 +190,7 @@ public class MainActivity extends AppCompatActivity
     private void addFragment() {
         FragmentManager manager = getSupportFragmentManager();
         FragmentTransaction transaction = manager.beginTransaction();
-        mapFragment = GoogleMapFragment.getInstance(locationList);
+        mapFragment = GoogleMapFragment.getInstance(mdLocationList);
         transaction.add(mainFrameLayout.getId(), mapFragment);
         transaction.commit();
     }
@@ -216,17 +225,46 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-    private ArrayList<MyLocation> loadData() {
-        ArrayList<MyLocation> data = ModelUtils.read(getApplicationContext(), SP_LOCATIONS_KEY, new TypeToken<ArrayList<MyLocation>>(){});
-        if (data == null) {
-            data = new ArrayList<>(LOCATION_LIST_CAPACITY + 3);
-            MyLocation sanjose = new MyLocation.Builder()
-                    .setTitle("San Jose")
-                    .setLatLng(new LatLng(37.3382, -121.8863))
-                    .build();
-            data.add(sanjose);
+//    private ArrayList<MyLocation> loadData() {
+//        ArrayList<MyLocation> data = ModelUtils.read(getApplicationContext(), SP_LOCATIONS_KEY, new TypeToken<ArrayList<MyLocation>>(){});
+//
+//        if (data == null) {
+//            data = new ArrayList<>(LOCATION_LIST_CAPACITY + 3);
+//            MyLocation sanjose = new MyLocation.Builder()
+//                    .setTitle("San Jose")
+//                    .setLatLng(new LatLng(37.3382, -121.8863))
+//                    .build();
+//            data.add(sanjose);
+//        }
+//
+//        return data;
+//    }
+
+    private LocationList loadData() {
+        LinkedList<MyLocation> list = ModelUtils.read(getApplicationContext(), SP_LOCATIONS_KEY,
+                new TypeToken<LinkedList<MyLocation>>(){});
+
+        Log.d(TAG, "loadData(): " + (list == null));
+
+        if (list == null ){
+            list = mockData();
         }
-        return data;
+
+        LocationList locationList = new LocationList(LOCATION_LIST_CAPACITY);
+        locationList.initiate(list);
+        return locationList;
+    }
+
+    private LinkedList<MyLocation> mockData() {
+        LinkedList<MyLocation> list = new LinkedList<>();
+
+        MyLocation sanjose = new MyLocation.Builder()
+                .setTitle("San Jose")
+                .setLatLng(new LatLng(37.3382082,-121.8863286))
+                .build();
+        list.add(sanjose);
+
+        return list;
     }
 
     private void setCameraFocus() {

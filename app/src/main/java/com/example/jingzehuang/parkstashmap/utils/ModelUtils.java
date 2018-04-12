@@ -2,6 +2,7 @@ package com.example.jingzehuang.parkstashmap.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -23,6 +24,7 @@ public class ModelUtils {
         SharedPreferences sp = context.getApplicationContext().getSharedPreferences(
                 PREF_NAME, Context.MODE_PRIVATE);
         try {
+            Log.d("Raych", sp.getString(key, ""));
             return gson.fromJson(sp.getString(key, ""), typeToken.getType());
         } catch (JsonSyntaxException e) {
             e.printStackTrace();
