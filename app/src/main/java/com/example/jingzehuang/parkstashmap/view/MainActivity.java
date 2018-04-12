@@ -75,10 +75,9 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onPause() {
         super.onPause();
+        ModelUtils.save(getApplicationContext(), SP_LOCATIONS_KEY, mdLocationList);
 //        ModelUtils.save(getApplicationContext(),
-//                SP_LOCATIONS_KEY, locationList);
-        ModelUtils.save(getApplicationContext(),
-                SP_LOCATIONS_KEY, mdLocationList.getLinkedList());
+//                SP_LOCATIONS_KEY, mdLocationList.getLinkedList());
         Log.i(TAG, this + " MainActivity.onPause(): Location list has been saved. Data size: "
                 + mdLocationList.size());
     }
@@ -241,17 +240,29 @@ public class MainActivity extends AppCompatActivity
 //    }
 
     private LocationList loadData() {
-        LinkedList<MyLocation> list = ModelUtils.read(getApplicationContext(), SP_LOCATIONS_KEY,
-                new TypeToken<LinkedList<MyLocation>>(){});
+//        LinkedList<MyLocation> list = ModelUtils.read(getApplicationContext(), SP_LOCATIONS_KEY,
+//                new TypeToken<LinkedList<MyLocation>>(){});
 
-        Log.d(TAG, "loadData(): " + (list == null));
 
-        if (list == null ){
-            list = mockData();
+
+//        if (list == null ){
+//            list = mockData();
+//        }
+//
+//        LocationList locationList = new LocationList(LOCATION_LIST_CAPACITY);
+//        locationList.initiate(list);
+
+
+        LocationList locationList = ModelUtils.read(getApplicationContext(), SP_LOCATIONS_KEY,
+                new TypeToken<LocationList>(){});
+
+        if (locationList == null) {
+            Log.d(TAG, "loadData(): " + (locationList == null));
+            locationList = new LocationList(LOCATION_LIST_CAPACITY);
+            LinkedList<MyLocation> list = mockData();
+            locationList.initiate(list);
         }
 
-        LocationList locationList = new LocationList(LOCATION_LIST_CAPACITY);
-        locationList.initiate(list);
         return locationList;
     }
 

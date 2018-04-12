@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.annotations.Expose;
 
 import java.util.Comparator;
 

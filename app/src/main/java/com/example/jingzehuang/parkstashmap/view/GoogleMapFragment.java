@@ -6,7 +6,6 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 
@@ -34,7 +33,6 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 
 import butterknife.BindView;
@@ -121,7 +119,7 @@ public class GoogleMapFragment extends Fragment
                 addMarker(startupLatLng, location.getTitle(), 0, 0);
                 moveTo(startupLatLng);
             } else {
-                addMarker(location.getLatLng(), location.getTitle(), 5, i * 300);
+                addMarker(location.getLatLng(), location.getTitle(), 3, i * 300);
             }
         }
 
@@ -158,7 +156,8 @@ public class GoogleMapFragment extends Fragment
     public void addMarker(final LatLng latLng, final String title, int color, int delay) {
 //        MarkerOptions marker = new MarkerOptions().position(startupLatLng).title(startupLocation.getTitle()).anchor(0.5f, 1f);
 
-        final float colorIndex = (float) (color % 13) / 13;
+        color %= 13;
+        final float colorIndex = (float) color / 13;
 
         final float OFFSET_RATE = 9f;
 
@@ -225,24 +224,28 @@ public class GoogleMapFragment extends Fragment
             private int bounceCount = 0;
             private final int MAX_BOUNCE_COUNT = 30;
 
-            private final float OFFSET_RATE = 1.236f;
+            private final float OFFSET_MAGNI = 1.236f;
+            private final float MIN_ALPHA = 0.3f;
 
             @Override
             public void run() {
                 float bounceRate;
+                float alphaRate;
                 if (upwardCount <= MAX_UPWARD_COUNT) {
-                    bounceRate = OFFSET_RATE * ((float) upwardCount++ / MAX_UPWARD_COUNT);
+                    bounceRate = OFFSET_MAGNI * ((float) upwardCount++ / MAX_UPWARD_COUNT);
                     marker.setAnchor(0.5f, 1.0f + bounceRate);
                     mainThreadHandler.postDelayed(this, 16);
                 } else {
                     float rate = (float) bounceCount++ / MAX_BOUNCE_COUNT;
-                    bounceRate = OFFSET_RATE * (1 - bounceInterpolator.getInterpolation(rate));
+                    bounceRate = OFFSET_MAGNI * (1 - bounceInterpolator.getInterpolation(rate));
+                    alphaRate = 1 - (1 - MIN_ALPHA) * rate;
 
                     if (bounceRate < 0.01f) {
                         marker.setAnchor(0.5f, 1.0f);
-                        marker.setAlpha(0.25f);
+                        marker.setAlpha(alphaRate);
                     } else {
                         marker.setAnchor(0.5f, 1.0f + bounceRate);
+                        marker.setAlpha(alphaRate);
                         mainThreadHandler.postDelayed(this, 16);
                     }
                 }
@@ -260,7 +263,7 @@ public class GoogleMapFragment extends Fragment
             private int downwardCount = 0;
             private final int MAX_DOWNWARD_COUNT = 26;
 
-//            private final float OFFSET_RATE = 1.236f;
+//            private final float OFFSET_MAGNI = 1.236f;
 
             @Override
             public void run() {
